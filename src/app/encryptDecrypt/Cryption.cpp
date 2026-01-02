@@ -2,8 +2,8 @@
 #include "../processes/Task.hpp"
 #include "../fileHandling/ReadEnv.cpp"
 
-int executeCryption(const std::string &taskData){
-    Task task = Task::fromString(taskData);
+
+int executeCryption(Task& task){
     ReadEnv env;
 
     std::string envKey = env.getenv();
