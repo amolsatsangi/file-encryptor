@@ -2,11 +2,29 @@
 #include "SodiumCryptoEngine.hpp"
 #include <stdexcept>
 #include<iostream>
+#include <fstream>
+
 SodiumCryptoEngine::SodiumCryptoEngine(){
     if (sodium_init() < 0) {
         throw std::runtime_error("libsodium initialization failed");
     }
-    randombytes_buf(key, sizeof key);
+    const char* keyFileName = ".secret.key";
+    std::ifstream keyFile(keyFileName, std::ios::binary);
+    if (keyFile.good()) {
+        keyFile.read(reinterpret_cast<char*>(key), sizeof key);
+        if (keyFile.gcount() != sizeof key) {
+            throw std::runtime_error("Invalid key file");
+        }
+    } else {
+        randombytes_buf(key, sizeof key);
+
+        std::ofstream out(keyFileName, std::ios::binary);
+        if (!out) {
+            throw std::runtime_error("Failed to create key file");
+        }
+
+        out.write(reinterpret_cast<const char*>(key), sizeof key);
+    }
 }
 std::vector<uint8_t> SodiumCryptoEngine::encrypt(const std::vector<uint8_t> &plainText) {
     std::vector<uint8_t> nonce(crypto_secretbox_NONCEBYTES); //crypto_secretbox_NONCEBYTES = 24 bytes = 192 bits

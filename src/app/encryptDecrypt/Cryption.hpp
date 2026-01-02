@@ -4,5 +4,5 @@
 #include<string>
 
 //int executeCryption(const std::string &taskData);
-int executeCryption(Task& task);
+int executeCrypto(Task& task);
 #endif
