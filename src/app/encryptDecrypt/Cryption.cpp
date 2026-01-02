@@ -1,31 +1,34 @@
-#include "Cryption.hpp"
+#include "../crypto/SodiumCryptoEngine.hpp"
 #include "../processes/Task.hpp"
-#include "../fileHandling/ReadEnv.cpp"
 
+#include <vector>
+#include <iterator>
+#include <fstream>
 
-int executeCryption(Task& task){
-    ReadEnv env;
+int executeCrypto(Task& task) {
+    SodiumCryptoEngine crypto;
 
-    std::string envKey = env.getenv();
-    int key = std::stoi(envKey);
+    std::istreambuf_iterator<char> begin(task.f_stream);
+    std::istreambuf_iterator<char> end;
+    std::vector<uint8_t> buffer(begin, end);
 
-    if(task.action == Action::ENCRYPT){
-        char ch;
-        while(task.f_stream.get(ch)){
-            ch = (ch+key)%256;
-            task.f_stream.seekg(-1,std::ios::cur);
-            task.f_stream.put(ch);
-        }
+    if (buffer.empty()) {
         task.f_stream.close();
+        return 0;
     }
-    else{
-        char ch;
-        while(task.f_stream.get(ch)){
-            ch = (ch-key)%256;
-            task.f_stream.seekg(-1,std::ios::cur);
-            task.f_stream.put(ch);
-        }
-        task.f_stream.close();
-    }
+
+    std::vector<uint8_t> result =(task.action == Action::ENCRYPT)? crypto.encrypt(buffer): crypto.decrypt(buffer);
+
+    
+    std::string tmpPath = task.filePath + ".tmp";
+
+    // write to temp file
+    std::ofstream out(tmpPath, std::ios::binary | std::ios::trunc);
+    out.write(reinterpret_cast<const char*>(result.data()), result.size());
+    out.close();
+
+    // replace original atomically
+    std::rename(tmpPath.c_str(), task.filePath.c_str());
+
     return 0;
 }
