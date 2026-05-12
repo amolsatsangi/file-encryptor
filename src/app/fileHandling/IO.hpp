@@ -8,7 +8,7 @@
 class IO{
     private:
         std::fstream fileStream;
-        std::string filePath;
+        //std::string filePath;
     public:
         IO(const std::string &filePath);
         ~IO();

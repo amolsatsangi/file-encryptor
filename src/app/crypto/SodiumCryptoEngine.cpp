@@ -29,7 +29,6 @@ SodiumCryptoEngine::SodiumCryptoEngine(){
 std::vector<uint8_t> SodiumCryptoEngine::encrypt(const std::vector<uint8_t> &plainText) {
     std::vector<uint8_t> nonce(crypto_secretbox_NONCEBYTES); //crypto_secretbox_NONCEBYTES = 24 bytes = 192 bits
     randombytes_buf(nonce.data(), nonce.size());
-    std::cout<<nonce.size()<<std::endl;
     std::vector<uint8_t> cipher(
         crypto_secretbox_MACBYTES + plainText.size()
     );

@@ -24,7 +24,14 @@ cd file-encryptor
 ```
 Compile using any C++11+ compiler:
 ```
-g++ main.cpp src/app/processes/ProcessManagement.cpp src/app/encryptDecrypt/Cryption.cpp src/app/fileHandling/IO.cpp -o file_encryptor -std=c++17
+g++ main.cpp \
+src/app/processes/ProcessManagement.cpp \
+src/app/encryptDecrypt/Cryption.cpp \
+src/app/fileHandling/IO.cpp \
+src/app/crypto/SodiumCryptoEngine.cpp \
+-o file_encryptor \
+-std=c++17 \
+-lsodium
 ```
 ## 📖 Usage
 

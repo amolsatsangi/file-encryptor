@@ -3,8 +3,8 @@
 #include "./src/app/processes/ProcessManagement.hpp"
 #include "./src/app/processes/Task.hpp"
 #include "./src/app/fileHandling/IO.hpp"
-
-
+#include<thread>
+#include<algorithm>
 namespace fs = std::filesystem;
 
 int main(int argc, char * argv[]){
@@ -16,27 +16,27 @@ int main(int argc, char * argv[]){
     std::getline(std::cin, directory);
 
     std::cout<<"Enter the action (encrypt/decrypt)"<<std::endl;
-    std::getline(std::cin, action); 
+    std::getline(std::cin, action);
+    int number_of_threads = std::thread::hardware_concurrency()-1;
     try {
         if(fs::exists(directory) && fs::is_directory(directory)){
             ProcessManagement Processmanagement;
-            for(const auto &entry : fs::recursive_directory_iterator(directory)){
-                if(entry.is_regular_file()){
-                    std::string filePath = entry.path().string();
-                    IO io(filePath);
-                    std::fstream f_stream = std::move(io.getFileStream());
-                    if(f_stream.is_open()){
-                        Action taskAction = (action == "encrypt"?Action::ENCRYPT:Action::DECRYPT);
-                        auto task = std::make_unique<Task> (std::move(f_stream),filePath, taskAction);
-                        Processmanagement.submitToQueue(std::move(task));
-                    }
-                    else{
-                        std::cout<<"Enable to open the file: "<<filePath<< std::endl;
-                    }
-
+            try{
+                std::thread master( &ProcessManagement::Production,&Processmanagement,directory,action);
+                std::vector<std::thread> consumer_thread;
+                for(int i=0;i<number_of_threads;i++){
+                    consumer_thread.emplace_back( &ProcessManagement::executeTask,&Processmanagement);
+                }
+                master.join();
+                for(int i=0;i<number_of_threads;i++){
+                    consumer_thread[i].join();
                 }
             }
-            Processmanagement.executeTask();
+            catch(const std::exception& e){
+                std::cout<<"Not able to create the thread"<<std::endl;
+                std::cout<<"ex.what()"<<std::endl;
+                return 1;
+            } 
         }
         else{
             std::cout<<"Invalid directory path: "<<directory<<std::endl;
