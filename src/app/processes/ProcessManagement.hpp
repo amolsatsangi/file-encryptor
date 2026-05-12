@@ -11,7 +11,7 @@ class ProcessManagement{
         ProcessManagement();
         bool submitToQueue(std::unique_ptr<Task> task);
         void executeTask();
-        void Production(const std::string &,const std::string &);
+        void populateTasks(const std::string &,const std::string &);
     private:
         std::queue<std::unique_ptr<Task>> taskQueue;
         std::mutex q_mtx;

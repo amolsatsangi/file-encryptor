@@ -19,20 +19,28 @@ void ProcessManagement::executeTask(){
     while(true){
         std::unique_lock<std::mutex> q_lock(q_mtx);
         cv.wait(q_lock,[this]{return !taskQueue.empty() || complete_production;});
-        if(taskQueue.empty() && complete_production)
+        if(taskQueue.empty() && complete_production){
+            q_lock.unlock();
             break;
-        auto task_to_execute = std::move(taskQueue.front());
-        taskQueue.pop();
-        q_lock.unlock();
-        {
-        std::lock_guard<std::mutex> log_lock(log_mtx);
-
-        std::cout<<"Thread "<<std::this_thread::get_id()<<"Executing task: "<<task_to_execute->filePath<<std::endl;
         }
-        executeCrypto(*task_to_execute);
+        try{
+            auto task_to_execute = std::move(taskQueue.front());
+            taskQueue.pop();
+            q_lock.unlock();
+            {
+                std::lock_guard<std::mutex> log_lock(log_mtx);
+                std::cout<<"Thread "<<std::this_thread::get_id()<<"Executing task: "<<task_to_execute->filePath<<std::endl;
+            }
+                executeCrypto(*task_to_execute);
+            }
+        catch (const std::exception &ex){
+            std::lock_guard<std::mutex> log_lock(log_mtx);
+            std::cout<< "Thread "<< std::this_thread::get_id()<< " Error: "<< ex.what()<< std::endl;
+        }
+        
     }
 }
-void ProcessManagement::Production(const std::string & directory,const std::string & action){
+void ProcessManagement::populateTasks(const std::string & directory,const std::string & action){
     for(const auto &entry : fs::recursive_directory_iterator(directory)){
         if(entry.is_regular_file()){
             std::string filePath = entry.path().string();
@@ -52,7 +60,9 @@ void ProcessManagement::Production(const std::string & directory,const std::stri
             }
         }
     }
-    std::lock_guard<std::mutex> q_lock(q_mtx);
-    complete_production = true;
+    {
+        std::lock_guard<std::mutex> q_lock(q_mtx);
+        complete_production = true;
+    }
     cv.notify_all();
 }

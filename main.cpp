@@ -17,12 +17,12 @@ int main(int argc, char * argv[]){
 
     std::cout<<"Enter the action (encrypt/decrypt)"<<std::endl;
     std::getline(std::cin, action);
-    int number_of_threads = std::thread::hardware_concurrency()-1;
+    int number_of_threads = std::max(2,static_cast<int>(std::thread::hardware_concurrency())-1);
     try {
         if(fs::exists(directory) && fs::is_directory(directory)){
             ProcessManagement Processmanagement;
             try{
-                std::thread master( &ProcessManagement::Production,&Processmanagement,directory,action);
+                std::thread master( &ProcessManagement::populateTasks,&Processmanagement,directory,action);
                 std::vector<std::thread> consumer_thread;
                 for(int i=0;i<number_of_threads;i++){
                     consumer_thread.emplace_back( &ProcessManagement::executeTask,&Processmanagement);
@@ -32,9 +32,9 @@ int main(int argc, char * argv[]){
                     consumer_thread[i].join();
                 }
             }
-            catch(const std::exception& e){
+            catch(const std::exception& ex){
                 std::cout<<"Not able to create the thread"<<std::endl;
-                std::cout<<"ex.what()"<<std::endl;
+                std::cout<<ex.what()<<std::endl;
                 return 1;
             } 
         }
